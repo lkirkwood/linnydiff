@@ -68,6 +68,16 @@ fn test_midsnake_2() {
 }
 
 #[test]
+fn test_midsnake_3() {
+    slice_from_str!(source, "axa");
+    slice_from_str!(target, "bxbbb");
+    split_from_strs!(desired, "a", "b", "a", "bbb", 1);
+    let actual = midsnake(&source, &target);
+
+    assert_eq!(desired, actual);
+}
+
+#[test]
 fn test_diff_0() {
     slice_from_str!(source, "sheeptractor");
     slice_from_str!(target, "spaceheater");
