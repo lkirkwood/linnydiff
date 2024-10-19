@@ -5,13 +5,50 @@ pub enum EditKind {
 }
 
 #[derive(Debug)]
-pub struct Edit<'a> {
+pub struct Edit<'l> {
     pub kind: EditKind,
-    pub line: &'a str,
-    pub pos: usize,
+    pub line: &'l str,
+}
+
+impl<'l> Edit<'l> {
+    pub fn insert(line: &'l str) -> Edit<'l> {
+        Edit {
+            kind: EditKind::INSERT,
+            line,
+        }
+    }
+
+    pub fn delete(line: &'l str) -> Edit<'l> {
+        Edit {
+            kind: EditKind::DELETE,
+            line,
+        }
+    }
 }
 
 pub type Slice<'l> = &'l [&'l str];
+
+#[derive(Debug)]
+pub struct Snake {
+    pub start: (isize, isize),
+    pub end: (isize, isize),
+}
+
+impl Snake {
+    pub fn len(&self) -> isize {
+        self.end.0 - self.start.0
+    }
+
+    pub fn split_slices<'l>(&self, a: Slice<'l>, b: Slice<'l>) -> SnakeSplit<'l> {
+        SnakeSplit {
+            a_first: &a[..self.start.0 as usize],
+            b_first: &b[..self.start.1 as usize],
+            a_second: Some(&a[self.end.0 as usize..]),
+            b_second: Some(&b[self.end.1 as usize..]),
+            snake_len: self.len() as usize,
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct SnakeSplit<'l> {
