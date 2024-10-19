@@ -45,7 +45,7 @@ pub fn midsnake<'l>(mut a: Slice<'l>, mut b: Slice<'l>) -> SnakeSplit<'l> {
             if DELTA % 2 != 0 {
                 println!("{}", k + DELTA);
                 dbg!(&backward_reach);
-                if let Some(b_x) = backward_reach.get(&-(k - DELTA)) {
+                if let Some(b_x) = backward_reach.get(&(-k + DELTA)) {
                     if x + *b_x + 2 > N {
                         println!("forward");
                         println!("{x} + {b_x} > {N} | k: {k}");
