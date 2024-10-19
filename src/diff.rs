@@ -81,8 +81,8 @@ pub fn midsnake<'l>(mut a: Slice<'l>, mut b: Slice<'l>) -> SnakeSplit<'l> {
             dbg!(&y);
             dbg!(&k);
             let mut snake_len = 0;
-            while (1..=N).contains(&x)
-                && (1..=M).contains(&y)
+            while (0..N).contains(&x)
+                && (0..M).contains(&y)
                 && a[(N - x - 1) as usize] == b[(M - y - 1) as usize]
             {
                 println!(
