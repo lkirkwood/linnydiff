@@ -35,11 +35,15 @@ pub fn midsnake<'l>(a: Slice<'l>, b: Slice<'l>) -> SnakeSplit<'l> {
     for D in 0..MAX {
         // Start forward search in diagonals -D..=D
         for k in (-D..=D).step_by(2) {
+            // along a wall, there is no (k - 1)th diag
             let mut x = if k == -D {
+                // implicit insertion when diagonal changes but x does not
                 forward_reach[k_index!(k + 1)]
+            // prefer further neighbouring diag
             } else if k != D && forward_reach[k_index!(k + 1)] > forward_reach[k_index!(k - 1)] {
                 forward_reach[k_index!(k + 1)]
             } else {
+                // (k - 1)th diag + 1 deletion == kth diag
                 forward_reach[k_index!(k - 1)] + 1
             };
 
@@ -76,11 +80,15 @@ pub fn midsnake<'l>(a: Slice<'l>, b: Slice<'l>) -> SnakeSplit<'l> {
 
         // Start backward search in diagonals -D..=D
         for k in (-D..=D).step_by(2) {
+            // along a wall, there is no (k - 1)th diag
             let mut x = if k == -D {
+                // implicit insertion when diagonal changes but x does not
                 backward_reach[k_index!(k + 1)]
+            // prefer further neighbouring diag
             } else if k != D && backward_reach[k_index!(k + 1)] > backward_reach[k_index!(k - 1)] {
                 backward_reach[k_index!(k + 1)]
             } else {
+                // (k - 1)th diag + 1 deletion == kth diag
                 backward_reach[k_index!(k - 1)] + 1
             };
 
@@ -130,6 +138,7 @@ pub fn diff<'l>(mut a: Slice<'l>, mut b: Slice<'l>) -> Vec<Edit<'l>> {
     let mut a_pos = 0;
     let mut b_pos = 0;
 
+    // if the two subsequences start the same, slide down diagonal 0
     while !a.is_empty() && !b.is_empty() && a.first().unwrap() == b.first().unwrap() {
         a = &a[1..];
         b = &b[1..];
@@ -137,11 +146,13 @@ pub fn diff<'l>(mut a: Slice<'l>, mut b: Slice<'l>) -> Vec<Edit<'l>> {
         b_pos += 1;
     }
 
+    // if the two subsequences end the same, slide up diagonal N - M
     while !a.is_empty() && !b.is_empty() && a.last().unwrap() == b.last().unwrap() {
         a = &a[..a.len() - 1];
         b = &b[..b.len() - 1];
     }
 
+    // hit the end in a, so just insert remainder of b
     if a.is_empty() {
         while !b.is_empty() {
             edits.push(Edit::insert(b.first().unwrap(), b_pos));
@@ -149,6 +160,7 @@ pub fn diff<'l>(mut a: Slice<'l>, mut b: Slice<'l>) -> Vec<Edit<'l>> {
             b_pos += 1;
         }
         return edits;
+    // hit the end in b, so just delete remainder of a
     } else if b.is_empty() {
         while !a.is_empty() {
             edits.push(Edit::delete(a.first().unwrap(), a_pos));
@@ -159,15 +171,18 @@ pub fn diff<'l>(mut a: Slice<'l>, mut b: Slice<'l>) -> Vec<Edit<'l>> {
     }
 
     match (a.len(), b.len()) {
+        // both single lines, so just delete/insert
         (1, 1) => {
             edits.push(Edit::delete(a.first().unwrap(), a_pos));
             edits.push(Edit::insert(b.first().unwrap(), b_pos));
             return edits;
         }
+        // a is a single line, so check if b contains it
         (1, _) => {
             let a_line = a.first().unwrap();
             let a_in_b_ = b.iter().position(|b_line| a_line == b_line);
             match a_in_b_ {
+                // b doesn't contain a, so delete a and insert b
                 None => {
                     edits.push(Edit::delete(a_line, a_pos));
 
@@ -178,6 +193,7 @@ pub fn diff<'l>(mut a: Slice<'l>, mut b: Slice<'l>) -> Vec<Edit<'l>> {
                     }
                     return edits;
                 }
+                // b contains a, so insert surrounding content
                 Some(a_in_b) => {
                     for line in &b[..a_in_b] {
                         edits.push(Edit::insert(line, b_pos));
@@ -193,6 +209,7 @@ pub fn diff<'l>(mut a: Slice<'l>, mut b: Slice<'l>) -> Vec<Edit<'l>> {
                 }
             };
         }
+        // inverse of above block
         (_, 1) => {
             let b_line = b.first().unwrap();
             let b_in_a_ = a.iter().position(|a_line| a_line == b_line);
@@ -226,6 +243,7 @@ pub fn diff<'l>(mut a: Slice<'l>, mut b: Slice<'l>) -> Vec<Edit<'l>> {
 
     let split = midsnake(a, b);
 
+    // no snake was found, two sequences have nothing common
     if split.snake_len == 0 && split.a_second.is_none() && split.b_second.is_none() {
         while !a.is_empty() {
             edits.push(Edit::delete(a.first().unwrap(), a_pos));
@@ -245,6 +263,7 @@ pub fn diff<'l>(mut a: Slice<'l>, mut b: Slice<'l>) -> Vec<Edit<'l>> {
     edits.extend(&mut diff(split.a_first, split.b_first).into_iter().map(
         |mut edit| match edit.kind {
             EditKind::Delete => {
+                // offset positions so line numbers are correct
                 edit.pos += a_pos;
                 edit
             }
