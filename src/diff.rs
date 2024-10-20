@@ -6,6 +6,9 @@ use model::{Edit, EditKind, Slice, Snake, SnakeSplit};
 use std::collections::HashMap;
 
 #[allow(non_snake_case)]
+/// Finds the longest snake (contiguous match) that is roughly an equal edit distance
+/// from the start and end of a and b.
+/// Returns the regions before and after the snake.
 pub fn midsnake<'l>(a: Slice<'l>, b: Slice<'l>) -> SnakeSplit<'l> {
     let N = a.len() as isize;
     let M = b.len() as isize;
@@ -17,7 +20,10 @@ pub fn midsnake<'l>(a: Slice<'l>, b: Slice<'l>) -> SnakeSplit<'l> {
     let mut backward_reach: HashMap<isize, isize> = HashMap::new();
     backward_reach.insert(1, 0);
 
-    let mut longest_snake = None;
+    let mut longest_snake = Snake {
+        start: (0, 0),
+        end: (0, 0),
+    };
 
     for D in 0..MAX {
         for k in (-D..=D).step_by(2) {
@@ -42,21 +48,14 @@ pub fn midsnake<'l>(a: Slice<'l>, b: Slice<'l>) -> SnakeSplit<'l> {
                 end: (x, y),
             };
 
-            match longest_snake {
-                None => {
-                    longest_snake = Some(snake.clone());
-                }
-                Some(ref longest) => {
-                    if longest.len() < snake_len {
-                        longest_snake = Some(snake.clone());
-                    }
-                }
+            if longest_snake.len() < snake_len {
+                longest_snake = snake.clone();
             }
 
             forward_reach.insert(k, x);
 
-            // longest snake so far
-            if DELTA % 2 != 0 && snake_len >= longest_snake.as_ref().unwrap().len() {
+            // always prefer the longest snake to achieve the cleanest diff
+            if DELTA % 2 != 0 && snake_len >= longest_snake.len() {
                 // get furthest reaching reverse path in same diagonal
                 if let Some(b_x) = backward_reach.get(&(-k + DELTA)) {
                     // combined paths span total length of a
@@ -93,21 +92,14 @@ pub fn midsnake<'l>(a: Slice<'l>, b: Slice<'l>) -> SnakeSplit<'l> {
                 end: (N - (x - snake_len), M - (y - snake_len)),
             };
 
-            match longest_snake {
-                None => {
-                    longest_snake = Some(snake.clone());
-                }
-                Some(ref longest) => {
-                    if longest.len() < snake_len {
-                        longest_snake = Some(snake.clone());
-                    }
-                }
+            if longest_snake.len() < snake_len {
+                longest_snake = snake.clone();
             }
 
             backward_reach.insert(k, x);
 
-            // longest snake so far
-            if DELTA % 2 == 0 && snake_len >= longest_snake.as_ref().unwrap().len() {
+            // always prefer the longest snake to achieve the cleanest diff
+            if DELTA % 2 == 0 && snake_len >= longest_snake.len() {
                 // get furthest reaching forward path in same diagonal
                 if let Some(f_x) = forward_reach.get(&(-k + DELTA)) {
                     // combined paths span total length of a
@@ -120,19 +112,9 @@ pub fn midsnake<'l>(a: Slice<'l>, b: Slice<'l>) -> SnakeSplit<'l> {
         }
     }
 
-    if let Some(snake) = longest_snake {
-        if snake.len() > 0 {
-            return snake.split_slices(a, b);
-        }
-    }
-
-    SnakeSplit {
-        a_first: a,
-        b_first: b,
-        a_second: None,
-        b_second: None,
-        snake_len: 0,
-    }
+    // At this point both searches have finished and evidently did not meet in a snake
+    // Return the longest snake we found, if any
+    longest_snake.split_slices(a, b)
 }
 
 /// Returns the edits required to transform a into b.

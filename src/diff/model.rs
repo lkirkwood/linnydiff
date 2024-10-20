@@ -43,12 +43,22 @@ impl Snake {
     }
 
     pub fn split_slices<'l>(&self, a: Slice<'l>, b: Slice<'l>) -> SnakeSplit<'l> {
-        SnakeSplit {
-            a_first: &a[..self.start.0 as usize],
-            b_first: &b[..self.start.1 as usize],
-            a_second: Some(&a[self.end.0 as usize..]),
-            b_second: Some(&b[self.end.1 as usize..]),
-            snake_len: self.len() as usize,
+        if self.len() > 0 {
+            SnakeSplit {
+                a_first: &a[..self.start.0 as usize],
+                b_first: &b[..self.start.1 as usize],
+                a_second: Some(&a[self.end.0 as usize..]),
+                b_second: Some(&b[self.end.1 as usize..]),
+                snake_len: self.len() as usize,
+            }
+        } else {
+            SnakeSplit {
+                a_first: a,
+                b_first: b,
+                a_second: None,
+                b_second: None,
+                snake_len: 0,
+            }
         }
     }
 }
