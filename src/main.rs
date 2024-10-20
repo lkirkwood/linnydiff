@@ -4,23 +4,25 @@ use std::{fs, path::PathBuf};
 
 use diff::{
     diff,
-    model::{Edit, EditKind, Slice},
+    model::{Edit, EditKind},
 };
 
 mod diff;
 
-fn print_edits(_a: Slice<'_>, _b: Slice<'_>, edits: &[Edit<'_>]) {
+fn print_edits(edits: &[Edit<'_>]) {
     for edit in edits {
         match edit.kind {
-            EditKind::Delete => println!("{}", format!("-- {}", edit.line).red()),
-            EditKind::Insert => println!("{}", format!("++ {}", edit.line).green()),
+            EditKind::Delete => println!("a:{} {}", edit.pos, format!("-- {}", edit.line).red()),
+            EditKind::Insert => println!("b:{} {}", edit.pos, format!("++ {}", edit.line).green()),
         }
     }
 }
 
 #[derive(Parser)]
 struct Cli {
+    /// First file to diff
     first: PathBuf,
+    /// Second file to diff
     second: PathBuf,
 }
 
@@ -33,5 +35,5 @@ fn main() {
     let target_lines = target.lines().collect::<Vec<_>>();
 
     let edits = diff(&source_lines, &target_lines);
-    print_edits(&source_lines, &target_lines, &edits);
+    print_edits(&edits);
 }
