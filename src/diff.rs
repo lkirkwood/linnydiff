@@ -68,7 +68,6 @@ pub fn midsnake<'l>(a: Slice<'l>, b: Slice<'l>) -> SnakeSplit<'l> {
                 if let Some(b_x) = backward_reach.get(k_index!(-k + DELTA)) {
                     // combined paths span total length of a
                     if x + *b_x + 1 > N {
-                        println!("forward");
                         return snake.split_slices(a, b);
                     }
                 }
@@ -113,7 +112,6 @@ pub fn midsnake<'l>(a: Slice<'l>, b: Slice<'l>) -> SnakeSplit<'l> {
                 if let Some(f_x) = forward_reach.get(k_index!(-k + DELTA)) {
                     // combined paths span total length of a
                     if *f_x + x + 1 > N {
-                        println!("backward");
                         return snake.split_slices(a, b);
                     }
                 }
