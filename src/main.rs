@@ -15,17 +15,6 @@ fn print_edits(_a: Slice<'_>, _b: Slice<'_>, edits: &[Edit<'_>]) {
             EditKind::Insert => println!("{} ++ {}", edit.pos, edit.line),
         }
     }
-
-    // let edit_map = edits
-    //     .into_iter()
-    //     .map(|edit| ((edit.kind.clone(), edit.pos), edit))
-    //     .collect::<HashMap<_, _>>();
-
-    // for index in 0..a.len().max(b.len()) {
-    //     if let Some(edit) = edit_map.get(&(EditKind::DELETE, index)) {
-    //         println!("{index} -- {}", edit.line);
-    //     }
-    // }
 }
 
 #[derive(Parser)]
