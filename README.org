@@ -1,0 +1,4 @@
+#+title: Readme
+
+This project is an assignment for a UTS Advanced Algorithms class.
+It's an implementation of E. Myers 1986 O(ND) time and O(N + D) space shortest-edit-script algorithm.
