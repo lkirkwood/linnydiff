@@ -43,8 +43,8 @@ macro_rules! split_from_strs {
 fn test_midsnake_0() {
     slice_from_str!(source, "aaxxaa");
     slice_from_str!(target, "bxxbb");
-    split_from_strs!(desired, "aa", "b", "aa", "bb", 2);
     let actual = midsnake(&source, &target);
+    split_from_strs!(desired, "aa", "b", "aa", "bb", 2);
 
     assert_eq!(desired, actual);
 }
@@ -53,8 +53,8 @@ fn test_midsnake_0() {
 fn test_midsnake_1() {
     slice_from_str!(source, "axxaa");
     slice_from_str!(target, "bbxxbb");
-    split_from_strs!(desired, "a", "bb", "aa", "bb", 2);
     let actual = midsnake(&source, &target);
+    split_from_strs!(desired, "a", "bb", "aa", "bb", 2);
 
     assert_eq!(desired, actual);
 }
@@ -63,8 +63,8 @@ fn test_midsnake_1() {
 fn test_midsnake_2() {
     slice_from_str!(source, "axa");
     slice_from_str!(target, "bbxbb");
-    split_from_strs!(desired, "a", "bb", "a", "bb", 1);
     let actual = midsnake(&source, &target);
+    split_from_strs!(desired, "a", "bb", "a", "bb", 1);
 
     assert_eq!(desired, actual);
 }
@@ -73,8 +73,8 @@ fn test_midsnake_2() {
 fn test_midsnake_3() {
     slice_from_str!(source, "axa");
     slice_from_str!(target, "bxbbb");
-    split_from_strs!(desired, "a", "b", "a", "bbb", 1);
     let actual = midsnake(&source, &target);
+    split_from_strs!(desired, "a", "b", "a", "bbb", 1);
 
     assert_eq!(desired, actual);
 }
@@ -84,14 +84,13 @@ fn test_diff_0() {
     slice_from_str!(source, "aaaaa");
     slice_from_str!(target, "aabbaa");
     let edits = diff(&source, &target);
-    assert_eq!(
-        vec![
-            Edit::delete("a", 2),
-            Edit::insert("b", 2),
-            Edit::insert("b", 3)
-        ],
-        edits
-    );
+    let desired = vec![
+        Edit::delete("a", 2),
+        Edit::insert("b", 2),
+        Edit::insert("b", 3),
+    ];
+
+    assert_eq!(desired, edits);
 }
 
 #[test]
@@ -99,23 +98,35 @@ fn test_diff_1() {
     slice_from_str!(source, "foobarbazbar");
     slice_from_str!(target, "foobarbar");
     let edits = diff(&source, &target);
-    assert_eq!(
-        vec![
-            Edit::delete("z", 8),
-            Edit::delete("b", 9),
-            Edit::delete("a", 10)
-        ],
-        edits
-    );
+    let desired = vec![
+        Edit::delete("z", 8),
+        Edit::delete("b", 9),
+        Edit::delete("a", 10),
+    ];
+
+    assert_eq!(desired, edits);
 }
 
 #[test]
 fn test_diff_2() {
-    slice_from_str!(source, "sheeptractor");
-    slice_from_str!(target, "spaceheater");
+    slice_from_str!(source, "spaceheater");
+    slice_from_str!(target, "sheeptractor");
     let edits = diff(&source, &target);
-    dbg!(edits);
-    assert!(false);
+    let desired = vec![
+        Edit::delete("p", 1),
+        Edit::delete("a", 2),
+        Edit::delete("c", 3),
+        Edit::delete("e", 4),
+        Edit::insert("e", 3),
+        Edit::insert("p", 4),
+        Edit::insert("t", 5),
+        Edit::insert("r", 6),
+        Edit::insert("c", 8),
+        Edit::delete("e", 9),
+        Edit::insert("o", 10),
+    ];
+
+    assert_eq!(desired, edits);
 }
 
 #[test]
@@ -159,6 +170,8 @@ fn test_diff_3() {
         Edit::insert("", 33),
         Edit::insert("            y = x - k", 34),
     ];
+
+    dbg!(&edits);
 
     assert_eq!(desired, edits);
 }
