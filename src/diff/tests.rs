@@ -1,7 +1,6 @@
-use std::fs;
-
 use super::*;
 use paste::paste;
+use std::fs;
 
 macro_rules! slice_from_str {
     ($name:ident, $string:expr) => {
@@ -191,6 +190,32 @@ fn test_diff_4() {
         Edit::insert("                x = V[k - 1] + 1", 32),
         Edit::insert("", 33),
         Edit::insert("            y = x - k", 34),
+    ];
+
+    assert_eq!(desired, edits);
+}
+
+#[test]
+fn test_diff_5() {
+    let source = fs::read_to_string("test/sample-1.org").unwrap();
+    let source_lines = source.lines().collect::<Vec<_>>();
+    let target = fs::read_to_string("test/sample-2.org").unwrap();
+    let target_lines = target.lines().collect::<Vec<_>>();
+    let edits = diff(&source_lines, &target_lines);
+    let desired = vec![
+        Edit::delete("Here is a line that will be deleted.", 2),
+        Edit::insert("This one was added!", 3),
+        Edit::delete("This is another deleted line.", 7),
+        Edit::delete("*** This subheading will be deleted too", 8),
+        Edit::delete("Along with all its content", 9),
+        Edit::delete("", 10),
+        Edit::delete("def foobar():", 18),
+        Edit::delete("    return \"bazbar\"", 19),
+        Edit::insert("def bazbar():", 14),
+        Edit::insert("    return \"foobar\"", 15),
+        Edit::insert("", 17),
+        Edit::insert("* This is a new heading", 18),
+        Edit::insert("This wasn't in the other file.", 19),
     ];
 
     assert_eq!(desired, edits);
