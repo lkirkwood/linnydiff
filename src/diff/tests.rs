@@ -16,6 +16,15 @@ macro_rules! slice_from_str {
     };
 }
 
+macro_rules! slice_from_fs {
+    ($name:ident, $path:expr) => {
+        paste! {
+            let [<$name _str>] = fs::read_to_string($path).unwrap();
+            let $name = [<$name _str>].lines().collect::<Vec<_>>();
+        }
+    };
+}
+
 macro_rules! split_from_strs {
     ($name:ident, $a1:expr, $b1:expr, $a2:expr, $b2:expr, $len:expr) => {
         paste! {
@@ -152,11 +161,9 @@ fn test_diff_3() {
 
 #[test]
 fn test_diff_4() {
-    let source = fs::read_to_string("test/notes-1.org").unwrap();
-    let source_lines = source.lines().collect::<Vec<_>>();
-    let target = fs::read_to_string("test/notes-2.org").unwrap();
-    let target_lines = target.lines().collect::<Vec<_>>();
-    let edits = diff(&source_lines, &target_lines);
+    slice_from_fs!(source, "test/notes-1.org");
+    slice_from_fs!(target, "test/notes-2.org");
+    let edits = diff(&source, &target);
     let desired = vec![
         Edit::delete("def diff(a: str, b: str):", 17),
         Edit::delete("    N, M = len(a), len(b)", 18),
@@ -197,11 +204,9 @@ fn test_diff_4() {
 
 #[test]
 fn test_diff_5() {
-    let source = fs::read_to_string("test/sample-1.org").unwrap();
-    let source_lines = source.lines().collect::<Vec<_>>();
-    let target = fs::read_to_string("test/sample-2.org").unwrap();
-    let target_lines = target.lines().collect::<Vec<_>>();
-    let edits = diff(&source_lines, &target_lines);
+    slice_from_fs!(source, "test/sample-1.org");
+    slice_from_fs!(target, "test/sample-2.org");
+    let edits = diff(&source, &target);
     let desired = vec![
         Edit::delete("Here is a line that will be deleted.", 2),
         Edit::insert("This one was added!", 3),
@@ -216,6 +221,32 @@ fn test_diff_5() {
         Edit::insert("", 17),
         Edit::insert("* This is a new heading", 18),
         Edit::insert("This wasn't in the other file.", 19),
+    ];
+
+    assert_eq!(desired, edits);
+}
+
+#[test]
+fn test_diff_6<'l>() {
+    slice_from_str!(source, "");
+    slice_from_str!(target, "");
+    let edits = diff(&source, &target);
+    let desired: Vec<Edit<'l>> = vec![];
+
+    assert_eq!(desired, edits);
+}
+
+#[test]
+fn test_diff_7() {
+    slice_from_fs!(source, "test/common-1.org");
+    slice_from_fs!(target, "test/common-2.org");
+    let edits = diff(&source, &target);
+    let desired = vec![
+        Edit::delete("* First heading", 2),
+        Edit::delete("repeated line", 3),
+        Edit::delete("", 4),
+        Edit::delete("* Third heading", 8),
+        Edit::insert("* Weird heading", 5),
     ];
 
     assert_eq!(desired, edits);
