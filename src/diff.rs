@@ -55,9 +55,13 @@ pub fn midsnake<'l>(a: Slice<'l>, b: Slice<'l>) -> SnakeSplit<'l> {
 
             forward_reach.insert(k, x);
 
+            // longest snake so far
             if DELTA % 2 != 0 && snake_len >= longest_snake.as_ref().unwrap().len() {
+                // get furthest reaching reverse path in same diagonal
                 if let Some(b_x) = backward_reach.get(&(-k + DELTA)) {
-                    if x + *b_x + 2 > N {
+                    // combined paths span total length of a
+                    if x + *b_x + 1 > N {
+                        println!("forward");
                         return snake.split_slices(a, b);
                     }
                 }
@@ -102,9 +106,13 @@ pub fn midsnake<'l>(a: Slice<'l>, b: Slice<'l>) -> SnakeSplit<'l> {
 
             backward_reach.insert(k, x);
 
+            // longest snake so far
             if DELTA % 2 == 0 && snake_len >= longest_snake.as_ref().unwrap().len() {
+                // get furthest reaching forward path in same diagonal
                 if let Some(f_x) = forward_reach.get(&(-k + DELTA)) {
-                    if *f_x + x > N {
+                    // combined paths span total length of a
+                    if *f_x + x + 1 > N {
+                        println!("backward");
                         return snake.split_slices(a, b);
                     }
                 }
