@@ -1,0 +1,96 @@
+#+title: Notes
+
+* Myers O(ND) Diff
++ D-path: A path starting at (0,0) with $D$ non-diagonal edges.
+  By induction consists of (D-1)-path, followed by a non-diagonal edge and 0 or more diagonal edges (snake).
+
++ A diagonal $k$ contains points $(x,y)$ s.t. $x - y = k$.
++ Following above diagonals can be labeled from -M to N.
+
++ Lemma: A D-path must end on a diagonal $k \in \{-D, -D+2, \hdots, D - 2, D\}$.
++ Lemma: A furthest reaching 0-path ends at $(x,x)$ where $x$ is:
+  + The last $x$ s.t. $a_x = b_x$
+  + The last $x$ s.t. $x \le M$
+  + The last $x$ s.t. $x \le N$
+  Therefore, a furthest reaching D-path on diagonal $k$ is equivalent to the furthest reaching (D-1)-path on $k \pm 1$, followed by a non-diagonal edge and the longest possible snake.
+
+#+begin_src python :results silent
+def diff(a: str, b: str):
+    N, M = len(a), len(b)
+    for D in range(0, M + N + 1):
+        for k in range(-D, D + 1):
+            # Find the endpoint of the furthest reaching D-path in diagonal k
+            Dpath, endpoint = ...
+            if endpoint == (N, M):
+                return Dpath
+#+end_src
+
+#+begin_src python :results silent
+from enum import Enum
+from typing import Optional
+
+class EditKind(Enum):
+    INS = 0
+    DEL = 1
+    EDIT = 2
+
+class Edit:
+    index: int
+    kind: EditKind
+    char: Optional[str]
+#+end_src
+
+#+begin_src python :results output
+def lcs(a: str, b: str) -> int:
+    N, M = len(a), len(b)
+    V = {1: 0}
+    for D in range(0, M + N + 1):
+        for k in range(-D, D + 1, 2):
+            if k == -D or (k != D and V.get(k - 1, -1) < V.get(k + 1, -1)):
+                x = V[k + 1]
+            else:
+                x = V[k - 1] + 1
+
+            y = x - k
+
+            while x + 1 < N and y + 1 < M and a[x + 1] == b[y + 1]:
+                x += 1
+                y += 1
+
+            V[k] = x
+
+            if x >= N and y >= M:
+                return D
+    return M + N
+
+print(lcs("acab", "cab"))
+#+end_src
+
+#+RESULTS:
+#+begin_example
+{1: 0, 0: 0}
+{1: 0, 0: 0, -1: 0}
+{1: 3, 0: 0, -1: 0}
+{1: 3, 0: 0, -1: 0, -2: 0}
+{1: 3, 0: 3, -1: 0, -2: 0}
+{1: 3, 0: 3, -1: 0, -2: 0, 2: 4}
+{1: 3, 0: 3, -1: 0, -2: 0, 2: 4, -3: 0}
+{1: 3, 0: 3, -1: 3, -2: 0, 2: 4, -3: 0}
+{1: 4, 0: 3, -1: 3, -2: 0, 2: 4, -3: 0}
+3
+#+end_example
+
+* GNU Diffutils diff2
++ Compare files not equal
++ Remove lines which dont match any lines in other file and record as insertions or deletions.
+  + For lines that match multiple lines, discard only if found in a run bounded by non-matching lines.
++ Slide down from the start of both files (diagonal 0), discarding lines that match until you hit a difference.
+  + Starting position is now the first difference in each file.
+  + This skips the leading snake
++ Slide up from the end of both files (diagonal N - M), discarding lines that match until you hit a difference or the the start of either file.
+  + This discards the trailing snake
+  + Some early returns can be made here if one file is a subset of another.
++ Divide and conquer as per linear space refinement in Myers by finding the $\ceil{D / 2} + 1$ snake of a D-path (middle snake).
+  + Run algorithm forwards from start and in reverse from end. For successive values of D, compute furthest reaching D-path. When the forward and reverse paths overlap the midpoint of the optimal SES is found.
+  + Since SES length is odd if and only if N - M is odd, check only for overlap when extending forward path if N - M is even as the forward paths operate on even D values starting from 0. Check for overlap when extending reverse path if N - M is odd.
++ On one partition, recursive and solve. On the other partition, iterate and solve.
