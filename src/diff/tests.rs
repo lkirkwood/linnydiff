@@ -131,6 +131,28 @@ fn test_diff_2() {
 
 #[test]
 fn test_diff_3() {
+    slice_from_str!(source, "sheeptractor");
+    slice_from_str!(target, "spaceheater");
+    let edits = diff(&source, &target);
+    let desired = vec![
+        Edit::insert("p", 1),
+        Edit::insert("a", 2),
+        Edit::insert("c", 3),
+        Edit::insert("e", 4),
+        Edit::delete("e", 3),
+        Edit::delete("p", 4),
+        Edit::delete("t", 5),
+        Edit::delete("r", 6),
+        Edit::delete("c", 8),
+        Edit::delete("o", 10),
+        Edit::insert("e", 9),
+    ];
+
+    assert_eq!(desired, edits);
+}
+
+#[test]
+fn test_diff_4() {
     let source = fs::read_to_string("test/notes-1.org").unwrap();
     let source_lines = source.lines().collect::<Vec<_>>();
     let target = fs::read_to_string("test/notes-2.org").unwrap();
