@@ -3,7 +3,6 @@ pub mod model;
 mod tests;
 
 use model::{Edit, EditKind, Slice, Snake, SnakeSplit};
-use std::collections::HashMap;
 
 #[allow(non_snake_case)]
 /// Finds the longest snake (contiguous match) that is roughly an equal edit distance
@@ -15,10 +14,17 @@ pub fn midsnake<'l>(a: Slice<'l>, b: Slice<'l>) -> SnakeSplit<'l> {
     let MAX = ((N + M) as usize).div_ceil(2) as isize;
     let DELTA = N - M;
 
-    let mut forward_reach: HashMap<isize, isize> = HashMap::new();
-    forward_reach.insert(1, 0);
-    let mut backward_reach: HashMap<isize, isize> = HashMap::new();
-    backward_reach.insert(1, 0);
+    macro_rules! k_index {
+        ($k:expr) => {
+            (($k + MAX) % (MAX * 2)) as usize
+        };
+    }
+
+    // let mut forward_reach: HashMap<isize, isize> = HashMap::new();
+    let mut forward_reach = vec![0; (MAX * 2) as usize + 1];
+    forward_reach[1] = 0;
+    let mut backward_reach = vec![0; (MAX * 2) as usize + 1];
+    backward_reach[1] = 0;
 
     let mut longest_snake = Snake {
         start: (0, 0),
@@ -29,11 +35,11 @@ pub fn midsnake<'l>(a: Slice<'l>, b: Slice<'l>) -> SnakeSplit<'l> {
         // Start forward search in diagonals -D..=D
         for k in (-D..=D).step_by(2) {
             let mut x = if k == -D {
-                forward_reach[&(k + 1)]
-            } else if k != D && forward_reach[&(k + 1)] > forward_reach[&(k - 1)] {
-                forward_reach[&(k + 1)]
+                forward_reach[k_index!(k + 1)]
+            } else if k != D && forward_reach[k_index!(k + 1)] > forward_reach[k_index!(k - 1)] {
+                forward_reach[k_index!(k + 1)]
             } else {
-                forward_reach[&(k - 1)] + 1
+                forward_reach[k_index!(k - 1)] + 1
             };
 
             let mut y = x - k;
@@ -53,12 +59,12 @@ pub fn midsnake<'l>(a: Slice<'l>, b: Slice<'l>) -> SnakeSplit<'l> {
                 longest_snake = snake.clone();
             }
 
-            forward_reach.insert(k, x);
+            forward_reach[k_index!(k)] = x;
 
             // always prefer the longest snake to achieve the cleanest diff
             if DELTA % 2 != 0 && snake_len >= longest_snake.len() {
                 // get furthest reaching reverse path in same diagonal
-                if let Some(b_x) = backward_reach.get(&(-k + DELTA)) {
+                if let Some(b_x) = backward_reach.get(k_index!(-k + DELTA)) {
                     // combined paths span total length of a
                     if x + *b_x + 1 > N {
                         println!("forward");
@@ -71,11 +77,11 @@ pub fn midsnake<'l>(a: Slice<'l>, b: Slice<'l>) -> SnakeSplit<'l> {
         // Start backward search in diagonals -D..=D
         for k in (-D..=D).step_by(2) {
             let mut x = if k == -D {
-                backward_reach[&(k + 1)]
-            } else if k != D && backward_reach[&(k + 1)] > backward_reach[&(k - 1)] {
-                backward_reach[&(k + 1)]
+                backward_reach[k_index!(k + 1)]
+            } else if k != D && backward_reach[k_index!(k + 1)] > backward_reach[k_index!(k - 1)] {
+                backward_reach[k_index!(k + 1)]
             } else {
-                backward_reach[&(k - 1)] + 1
+                backward_reach[k_index!(k - 1)] + 1
             };
 
             let mut y = x - k;
@@ -98,12 +104,12 @@ pub fn midsnake<'l>(a: Slice<'l>, b: Slice<'l>) -> SnakeSplit<'l> {
                 longest_snake = snake.clone();
             }
 
-            backward_reach.insert(k, x);
+            backward_reach[k_index!(k)] = x;
 
             // always prefer the longest snake to achieve the cleanest diff
             if DELTA % 2 == 0 && snake_len >= longest_snake.len() {
                 // get furthest reaching forward path in same diagonal
-                if let Some(f_x) = forward_reach.get(&(-k + DELTA)) {
+                if let Some(f_x) = forward_reach.get(k_index!(-k + DELTA)) {
                     // combined paths span total length of a
                     if *f_x + x + 1 > N {
                         println!("backward");
