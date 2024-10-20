@@ -1,0 +1,50 @@
+#+title: LinnyDiff
+#+bibliography: refs.bib
+
+* Overview
+Git, GNU diff, and most other battle-tested, line-by-line tools for finding a shortest (or sometimes best) edit script between two files use Eugene Myers 1986 algorithm that works in O(ND) time and space. Here N is the total length of both files, measured in lines, and D is the length of the edit script.
+
+More specifically, both Git and GNU diff implement the "divide and conquer" refinement which instead requires a total of O(N + D) space, although each add their own separate set of further refinements. [cite:@myers1986nd]
+
+The reason Myer's diff algorithm is chosen is because it is also the most time and memory efficient method for files which are largely the same, while also being quite a simple algorithm. This efficiency due to the method used to search the edit space - the algorithm works from the inside out, which means that it can easily be stopped if the cost is too high, and also that it usually finds solutions very quickly for similar files as their scripts will be shorter. There are other algorithms which have similar time and space complexity, such as patience diff and its cousin histogram diff, and while these algorithms produce better diffs for some use cases, the algorithms are significantly more complicated compared to the bare-bones Myer's diff.
+
+* Base Algorithm
+The basic algorithm computes the shortest edit script between two sequences by finding the minimal set of insertions and deletions needed to transform one sequence into another. It operates by constructing a graph traversal problem, where each point in the graph corresponds to a prefix of one sequence matched against a prefix of the other.
+
+The algorithm uses dynamic programming to track the furthest point in the first sequence reachable on different diagonal paths of the edit graph, where movement in both sequences at the same time corresponds to a match or "snake", and horizontal or vertical movements represent insertions or deletions. These diagonal paths are tracked for increasing edit distances $D$, starting from zero and incrementing until a solution is found or the end of the longest sequence is reached.
+
+For each edit distance D, call the furthest reaching path containing D edits a D-path. The second lemma in Myer's paper states that a D-path ending in diagonal $k$ is composed of the furthest reaching (D-1)-path on diagonal $k \pm 1$, plus one insertion or deletion. Practically speaking, this means that to compute the furthest reaching D-path one only needs to check the furthest reaching path in the diagonals $k \pm 1$ and then add an edit to move the end point into diagonal $k$. Once the furthest reaching path reaches the end of both sequences, the shortest edit script length is found.
+
+This algorithm requires, as mentioned, $O((N+M)D)$ time and space.
+
+* Linear Space Refinement
+The above algorithm can be refined to consume only $O(N+M+D)$ space in the same time by implementing two searches running in parallel from the start and end of the file, working towards the middle. When the two searches meet, the snake which is an equal edit distance from either end of the sequences is found. The implementation then recurses on the segments before and after the snake. When no snake is found for a segment, the two must have no lines in common and can therefore be reported as edits. The reason that this refinement is more memory efficient is that the only allocations that are required are of size ~N~ and ~M~ for storing the sequences, and two vectors of size ~D~ which store the edit path distance for each subproblem. Instead of storing a copy of this vector for each iteration of the algorithm, one is created each time a snake is found and dropped immediately after.
+
+* Additional Refinements in GNU Diff
+The implementation of the divide and conquer algorithm in GNU diffutils-3.9 adds some additional refinements to the algorithm in order to save time on the most common cases. For instance, if a snake longer than 20 lines (hardcoded value) is encountered and some other, complex contextual conditions are met, the algorithm will return early. Furthermore, the algorithm will not continue searching for a middle snake beyond the diagonal which is the larger of 4096 (another hardcoded value) and the square root of the input size.
+
+However there are more modifications that just some early stopping conditions. The algorithm also removes all lines which have no matches in the other file, and then uses a mapping from apparent line number in the stripped down file to the actual line number in the original file in order to correctly report edits.
+
+Surprisingly, this implementation does not perform any special streaming or buffering of the input files - both are simply copied into memory in their entirety.
+
+* Implementation
+The time and space complexity of the Rust implementation here should be the same as the theoretical algorithm, O((N+M)D) and O(N + M + D) respectively. All operations are performed on read-only slices of the data, so no content is copied. As far as I am aware, it is a faithful recreation of the theoretical algorithm. However, the implementation here never exits early so it could be less performant for large, very different files. Furthermore, when executing the divide and conquer portion of the algorithm which finds the middle snake, this implementation only accepts the largest snake (contiguous match) and so may be less time efficient in order to produce better diffs than it otherwise would. It is unclear from the GNU diffutils-3.9 whether this same behaviour is used - it is possible that a smaller snake which is closer to the middle of the two files may be chosen instead. Certainly the two implementations produce different diffs on some inputs.
+
+Unfortunately, there are some minor issues with the diffs produced in this implementation and the C++ translation. GNU diffutils prefers inserting or deleting whitespace lines over other lines if the two operations are equivalent, however no such heuristic is used in this implementation which can sometimes produce less readable diffs.
+
+This implementation assumes that both files can fit in the amount of memory available to the application, much like GNU diffutils. Futhermore, it assumes that diffing the two files will not require excessive recursion. GNU diffutils mitigates the risk of high recursion depth by recursing only for the smaller subproblem, and then iterating to process the second subproblem. This implementation makes no such efforts and as such is vulnerable to files with matching lines sandwiched between different lines. Finally, this implementation is only capable of diffing files containing exclusively UTF-8 content.
+
+** Note on Language
+The primary implementation here is in Rust. The C++ version was largely transpiled from the Rust code, and while I have not been able to get all the tests passing it seems to function similarly. For the purposes of reading and understanding the architecture the two should be interchangeable despite the logic errors that are evidently present in the transpiled code.
+
+* Testing
+The tests provided here cover the two primary functions, ~midsnake~ and ~diff~. The ~midsnake~ tests ensure that the process of searching forward and backwards through two sequences to find the largest point of correspondence near the middle is working correctly - some minimal examples are tested in order to make errors obvious and fixtures easy to create. The ~diff~ tests directly validate the actual functionality of the program, and ensure that the correct edit script is reported for two given sequences.
+
+* Insights
+If I was to implement this again I would attempt to abstract out the repeated portion of ~midsnake~. The repeated code violates the DRY principle, and while it is certainly not always best to put all repeated code in a function I feel in this case, since the forward and reverse searches are so similar, it should have been possible to reduce that search to a generic function. Some shared state would be required so that one search can check the progress of the other, but an inner function or lambda should be a plausible solution. Doing this would greatly reduce the complexity of the most confusing function.
+
+Furthermore, I spent a lot of time worrying about aligning edits to get the most appealing diff output, however the most basic approach of simply printing edits in the order they were found turned out to be best. As mentioned above, the diffs produced by this implementation are not always perfect, however they are all valid and correct edit scripts.
+
+One important tip I took from the GNU implementation was the idea of sliding the window down from the start and up from the end when recursing. I don't write a lot of recursive functions but doing this from the start lead me down the right path so that the algorithm does as much early exiting and handling simple cases as possible.
+
+#+print_bibliography:
