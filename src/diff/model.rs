@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum EditKind {
     INSERT,
     DELETE,
@@ -8,27 +8,30 @@ pub enum EditKind {
 pub struct Edit<'l> {
     pub kind: EditKind,
     pub line: &'l str,
+    pub pos: usize,
 }
 
 impl<'l> Edit<'l> {
-    pub fn insert(line: &'l str) -> Edit<'l> {
+    pub fn insert(line: &'l str, pos: usize) -> Edit<'l> {
         Edit {
             kind: EditKind::INSERT,
             line,
+            pos,
         }
     }
 
-    pub fn delete(line: &'l str) -> Edit<'l> {
+    pub fn delete(line: &'l str, pos: usize) -> Edit<'l> {
         Edit {
             kind: EditKind::DELETE,
             line,
+            pos,
         }
     }
 }
 
 pub type Slice<'l> = &'l [&'l str];
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Snake {
     pub start: (isize, isize),
     pub end: (isize, isize),
