@@ -26,6 +26,7 @@ pub fn midsnake<'l>(a: Slice<'l>, b: Slice<'l>) -> SnakeSplit<'l> {
     };
 
     for D in 0..MAX {
+        // Start forward search in diagonals -D..=D
         for k in (-D..=D).step_by(2) {
             let mut x = if k == -D {
                 forward_reach[&(k + 1)]
@@ -67,6 +68,7 @@ pub fn midsnake<'l>(a: Slice<'l>, b: Slice<'l>) -> SnakeSplit<'l> {
             }
         }
 
+        // Start backward search in diagonals -D..=D
         for k in (-D..=D).step_by(2) {
             let mut x = if k == -D {
                 backward_reach[&(k + 1)]
