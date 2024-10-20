@@ -1,10 +1,10 @@
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum EditKind {
     INSERT,
     DELETE,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Edit<'l> {
     pub kind: EditKind,
     pub line: &'l str,
