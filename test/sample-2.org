@@ -1,0 +1,20 @@
+* My first heading
+This is some content that I am writing.
+This one won't.
+This one was added!
+
+* A second heading
+** This one has a subheading
+*** But this subheading will survive
+Live to see another day.
+
+* Here is some code
+This code will change.
+
+#+begin_src python
+def bazbar():
+    return "foobar"
+#+end_src
+
+* This is a new heading
+This wasn't in the other file.
