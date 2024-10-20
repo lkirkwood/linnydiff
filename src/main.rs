@@ -1,4 +1,5 @@
 use clap::Parser;
+use colored::Colorize;
 use std::{fs, path::PathBuf};
 
 use diff::{
@@ -11,8 +12,8 @@ mod diff;
 fn print_edits(_a: Slice<'_>, _b: Slice<'_>, edits: &[Edit<'_>]) {
     for edit in edits {
         match edit.kind {
-            EditKind::Delete => println!("{} -- {}", edit.pos, edit.line),
-            EditKind::Insert => println!("{} ++ {}", edit.pos, edit.line),
+            EditKind::Delete => println!("{}", format!("-- {}", edit.line).red()),
+            EditKind::Insert => println!("{}", format!("++ {}", edit.line).green()),
         }
     }
 }
