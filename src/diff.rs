@@ -19,7 +19,7 @@ pub fn midsnake<'l>(a: Slice<'l>, b: Slice<'l>) -> SnakeSplit<'l> {
 
     let mut longest_snake = None;
 
-    for D in 0..(MAX as isize) {
+    for D in 0..MAX {
         for k in (-D..=D).step_by(2) {
             let mut x = if k == -D {
                 forward_reach[&(k + 1)]
@@ -114,7 +114,7 @@ pub fn midsnake<'l>(a: Slice<'l>, b: Slice<'l>) -> SnakeSplit<'l> {
 
     if let Some(snake) = longest_snake {
         if snake.len() > 0 {
-            return snake.split_slices(&a, &b);
+            return snake.split_slices(a, b);
         }
     }
 
@@ -230,13 +230,13 @@ pub fn diff<'l>(mut a: Slice<'l>, mut b: Slice<'l>) -> Vec<Edit<'l>> {
     let split = midsnake(a, b);
 
     if split.snake_len == 0 && split.a_second.is_none() && split.b_second.is_none() {
-        while a.len() > 0 {
+        while !a.is_empty() {
             edits.push(Edit::delete(a.first().unwrap(), a_pos));
             a = &a[1..];
             a_pos += 1;
         }
 
-        while b.len() > 0 {
+        while !b.is_empty() {
             edits.push(Edit::insert(b.first().unwrap(), b_pos));
             b = &b[1..];
             b_pos += 1;
@@ -247,11 +247,11 @@ pub fn diff<'l>(mut a: Slice<'l>, mut b: Slice<'l>) -> Vec<Edit<'l>> {
 
     edits.extend(&mut diff(split.a_first, split.b_first).into_iter().map(
         |mut edit| match edit.kind {
-            EditKind::DELETE => {
+            EditKind::Delete => {
                 edit.pos += a_pos;
                 edit
             }
-            EditKind::INSERT => {
+            EditKind::Insert => {
                 edit.pos += b_pos;
                 edit
             }
@@ -262,16 +262,16 @@ pub fn diff<'l>(mut a: Slice<'l>, mut b: Slice<'l>) -> Vec<Edit<'l>> {
         &mut diff(split.a_second.unwrap(), split.b_second.unwrap())
             .into_iter()
             .map(|mut edit| match edit.kind {
-                EditKind::DELETE => {
+                EditKind::Delete => {
                     edit.pos += a_pos + split.a_first.len() + split.snake_len;
                     edit
                 }
-                EditKind::INSERT => {
+                EditKind::Insert => {
                     edit.pos += b_pos + split.b_first.len() + split.snake_len;
                     edit
                 }
             }),
     );
 
-    return edits;
+    edits
 }

@@ -1,7 +1,7 @@
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum EditKind {
-    INSERT,
-    DELETE,
+    Insert,
+    Delete,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -14,7 +14,7 @@ pub struct Edit<'l> {
 impl<'l> Edit<'l> {
     pub fn insert(line: &'l str, pos: usize) -> Edit<'l> {
         Edit {
-            kind: EditKind::INSERT,
+            kind: EditKind::Insert,
             line,
             pos,
         }
@@ -22,7 +22,7 @@ impl<'l> Edit<'l> {
 
     pub fn delete(line: &'l str, pos: usize) -> Edit<'l> {
         Edit {
-            kind: EditKind::DELETE,
+            kind: EditKind::Delete,
             line,
             pos,
         }

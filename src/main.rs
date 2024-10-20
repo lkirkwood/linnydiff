@@ -1,5 +1,5 @@
 use clap::Parser;
-use std::{collections::HashMap, fs, path::PathBuf};
+use std::{fs, path::PathBuf};
 
 use diff::{
     diff,
@@ -8,11 +8,11 @@ use diff::{
 
 mod diff;
 
-fn print_edits(a: Slice<'_>, b: Slice<'_>, edits: &[Edit<'_>]) {
+fn print_edits(_a: Slice<'_>, _b: Slice<'_>, edits: &[Edit<'_>]) {
     for edit in edits {
         match edit.kind {
-            EditKind::DELETE => println!("{} -- {}", edit.pos, edit.line),
-            EditKind::INSERT => println!("{} ++ {}", edit.pos, edit.line),
+            EditKind::Delete => println!("{} -- {}", edit.pos, edit.line),
+            EditKind::Insert => println!("{} ++ {}", edit.pos, edit.line),
         }
     }
 
@@ -37,9 +37,9 @@ struct Cli {
 fn main() {
     let cli = Cli::parse();
 
-    let source = fs::read_to_string("test/notes-1.org").unwrap();
+    let source = fs::read_to_string(cli.first).unwrap();
     let source_lines = source.lines().collect::<Vec<_>>();
-    let target = fs::read_to_string("test/notes-2.org").unwrap();
+    let target = fs::read_to_string(cli.second).unwrap();
     let target_lines = target.lines().collect::<Vec<_>>();
 
     let edits = diff(&source_lines, &target_lines);
