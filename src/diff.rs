@@ -14,6 +14,7 @@ pub fn midsnake<'l>(a: Slice<'l>, b: Slice<'l>) -> SnakeSplit<'l> {
     let MAX = ((N + M) as usize).div_ceil(2) as isize;
     let DELTA = N - M;
 
+    /// Converts a diagonal k ranging from -MAX..=MAX to a positive array index.
     macro_rules! k_index {
         ($k:expr) => {
             (($k + MAX) % (MAX * 2)) as usize
