@@ -1,0 +1,10 @@
+#+title: Common 1
+
+* Second heading
+repeated line
+
+* Weird heading
+repeated line
+
+* Fourth heading
+repeated line

@@ -1,0 +1,13 @@
+#+title: Common 1
+
+* First heading
+repeated line
+
+* Second heading
+repeated line
+
+* Third heading
+repeated line
+
+* Fourth heading
+repeated line
