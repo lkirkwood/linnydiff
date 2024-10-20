@@ -171,7 +171,5 @@ fn test_diff_3() {
         Edit::insert("            y = x - k", 34),
     ];
 
-    dbg!(&edits);
-
     assert_eq!(desired, edits);
 }
