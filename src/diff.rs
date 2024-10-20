@@ -1,8 +1,8 @@
-mod model;
+pub mod model;
 #[cfg(test)]
 mod tests;
 
-use model::{Edit, Slice, Snake, SnakeSplit};
+use model::{Edit, EditKind, Slice, Snake, SnakeSplit};
 use std::collections::HashMap;
 
 #[allow(non_snake_case)]
@@ -37,28 +37,28 @@ pub fn midsnake<'l>(a: Slice<'l>, b: Slice<'l>) -> SnakeSplit<'l> {
                 snake_len += 1;
             }
 
-            forward_reach.insert(k, x);
-
             let snake = Snake {
                 start: (x - snake_len, y - snake_len),
                 end: (x, y),
             };
 
-            if DELTA % 2 != 0 {
-                if let Some(b_x) = backward_reach.get(&(-k + DELTA)) {
-                    if x + *b_x + 2 > N {
-                        return snake.split_slices(a, b);
+            match longest_snake {
+                None => {
+                    longest_snake = Some(snake.clone());
+                }
+                Some(ref longest) => {
+                    if longest.len() < snake_len {
+                        longest_snake = Some(snake.clone());
                     }
                 }
             }
 
-            match longest_snake {
-                None => {
-                    longest_snake = Some(snake);
-                }
-                Some(ref longest) => {
-                    if longest.len() < snake_len {
-                        longest_snake = Some(snake);
+            forward_reach.insert(k, x);
+
+            if DELTA % 2 != 0 && snake_len >= longest_snake.as_ref().unwrap().len() {
+                if let Some(b_x) = backward_reach.get(&(-k + DELTA)) {
+                    if x + *b_x + 2 > N {
+                        return snake.split_slices(a, b);
                     }
                 }
             }
@@ -89,23 +89,23 @@ pub fn midsnake<'l>(a: Slice<'l>, b: Slice<'l>) -> SnakeSplit<'l> {
                 end: (N - (x - snake_len), M - (y - snake_len)),
             };
 
-            backward_reach.insert(k, x);
-
-            if DELTA % 2 == 0 {
-                if let Some(f_x) = forward_reach.get(&(-k + DELTA)) {
-                    if *f_x + x > N {
-                        return snake.split_slices(a, b);
+            match longest_snake {
+                None => {
+                    longest_snake = Some(snake.clone());
+                }
+                Some(ref longest) => {
+                    if longest.len() < snake_len {
+                        longest_snake = Some(snake.clone());
                     }
                 }
             }
 
-            match longest_snake {
-                None => {
-                    longest_snake = Some(snake);
-                }
-                Some(ref longest) => {
-                    if longest.len() < snake_len {
-                        longest_snake = Some(snake);
+            backward_reach.insert(k, x);
+
+            if DELTA % 2 == 0 && snake_len >= longest_snake.as_ref().unwrap().len() {
+                if let Some(f_x) = forward_reach.get(&(-k + DELTA)) {
+                    if *f_x + x > N {
+                        return snake.split_slices(a, b);
                     }
                 }
             }
@@ -113,7 +113,9 @@ pub fn midsnake<'l>(a: Slice<'l>, b: Slice<'l>) -> SnakeSplit<'l> {
     }
 
     if let Some(snake) = longest_snake {
-        return snake.split_slices(&a, &b);
+        if snake.len() > 0 {
+            return snake.split_slices(&a, &b);
+        }
     }
 
     SnakeSplit {
@@ -128,10 +130,14 @@ pub fn midsnake<'l>(a: Slice<'l>, b: Slice<'l>) -> SnakeSplit<'l> {
 /// Returns the edits required to transform a into b.
 pub fn diff<'l>(mut a: Slice<'l>, mut b: Slice<'l>) -> Vec<Edit<'l>> {
     let mut edits = vec![];
+    let mut a_pos = 0;
+    let mut b_pos = 0;
 
     while !a.is_empty() && !b.is_empty() && a.first().unwrap() == b.first().unwrap() {
         a = &a[1..];
         b = &b[1..];
+        a_pos += 1;
+        b_pos += 1;
     }
 
     while !a.is_empty() && !b.is_empty() && a.last().unwrap() == b.last().unwrap() {
@@ -141,59 +147,78 @@ pub fn diff<'l>(mut a: Slice<'l>, mut b: Slice<'l>) -> Vec<Edit<'l>> {
 
     if a.is_empty() {
         while !b.is_empty() {
-            edits.push(Edit::insert(b.first().unwrap()));
+            edits.push(Edit::insert(b.first().unwrap(), b_pos));
             b = &b[1..];
+            b_pos += 1;
         }
+        return edits;
     } else if b.is_empty() {
         while !a.is_empty() {
-            edits.push(Edit::delete(a.first().unwrap()));
+            edits.push(Edit::delete(a.first().unwrap(), a_pos));
             a = &a[1..];
+            a_pos += 1;
         }
+        return edits;
     }
 
     match (a.len(), b.len()) {
         (1, 1) => {
-            edits.push(Edit::delete(a.first().unwrap()));
-            edits.push(Edit::insert(b.first().unwrap()));
+            edits.push(Edit::delete(a.first().unwrap(), a_pos));
+            edits.push(Edit::insert(b.first().unwrap(), b_pos));
             return edits;
         }
         (1, _) => {
             let a_line = a.first().unwrap();
-            let a_pos = b.iter().position(|b_line| a_line == b_line);
-            match a_pos {
+            let a_in_b_ = b.iter().position(|b_line| a_line == b_line);
+            match a_in_b_ {
                 None => {
-                    edits.push(Edit::delete(a_line));
+                    edits.push(Edit::delete(a_line, a_pos));
 
                     while !b.is_empty() {
-                        edits.push(Edit::insert(b.first().unwrap()));
+                        edits.push(Edit::insert(b.first().unwrap(), b_pos));
                         b = &b[1..];
+                        b_pos += 1;
                     }
                     return edits;
                 }
-                Some(a_pos) => {
-                    for line in b[..a_pos].iter().chain(&b[a_pos + 1..]) {
-                        edits.push(Edit::insert(line));
+                Some(a_in_b) => {
+                    for line in &b[..a_in_b] {
+                        edits.push(Edit::insert(line, b_pos));
+                        b_pos += 1;
                     }
+
+                    for line in &b[a_in_b + 1..] {
+                        edits.push(Edit::insert(line, b_pos));
+                        b_pos += 1;
+                    }
+
                     return edits;
                 }
             };
         }
         (_, 1) => {
             let b_line = b.first().unwrap();
-            let b_pos = a.iter().position(|a_line| a_line == b_line);
-            match b_pos {
+            let b_in_a_ = a.iter().position(|a_line| a_line == b_line);
+            match b_in_a_ {
                 None => {
                     while !a.is_empty() {
-                        edits.push(Edit::delete(a.first().unwrap()));
+                        edits.push(Edit::delete(a.first().unwrap(), a_pos));
                         a = &a[1..];
+                        a_pos += 1;
                     }
 
-                    edits.push(Edit::insert(b_line));
+                    edits.push(Edit::insert(b_line, b_pos));
                     return edits;
                 }
                 Some(b_pos) => {
-                    for line in a[..b_pos].iter().chain(&a[b_pos + 1..]) {
-                        edits.push(Edit::delete(line));
+                    for line in &a[..b_pos] {
+                        edits.push(Edit::delete(line, a_pos));
+                        a_pos += 1;
+                    }
+
+                    for line in &a[b_pos + 1..] {
+                        edits.push(Edit::delete(line, a_pos));
+                        a_pos += 1;
                     }
                     return edits;
                 }
@@ -204,23 +229,49 @@ pub fn diff<'l>(mut a: Slice<'l>, mut b: Slice<'l>) -> Vec<Edit<'l>> {
 
     let split = midsnake(a, b);
 
-    if split.snake_len == 0 {
+    if split.snake_len == 0 && split.a_second.is_none() && split.b_second.is_none() {
         while a.len() > 0 {
-            edits.push(Edit::delete(a.first().unwrap()));
+            edits.push(Edit::delete(a.first().unwrap(), a_pos));
             a = &a[1..];
+            a_pos += 1;
         }
 
         while b.len() > 0 {
-            edits.push(Edit::insert(b.first().unwrap()));
+            edits.push(Edit::insert(b.first().unwrap(), b_pos));
             b = &b[1..];
+            b_pos += 1;
         }
 
         return edits;
     }
 
-    edits.append(&mut diff(split.a_first, split.b_first));
+    edits.extend(&mut diff(split.a_first, split.b_first).into_iter().map(
+        |mut edit| match edit.kind {
+            EditKind::DELETE => {
+                edit.pos += a_pos;
+                edit
+            }
+            EditKind::INSERT => {
+                edit.pos += b_pos;
+                edit
+            }
+        },
+    ));
 
-    edits.append(&mut diff(split.a_second.unwrap(), split.b_second.unwrap()));
+    edits.extend(
+        &mut diff(split.a_second.unwrap(), split.b_second.unwrap())
+            .into_iter()
+            .map(|mut edit| match edit.kind {
+                EditKind::DELETE => {
+                    edit.pos += a_pos + split.a_first.len() + split.snake_len;
+                    edit
+                }
+                EditKind::INSERT => {
+                    edit.pos += b_pos + split.b_first.len() + split.snake_len;
+                    edit
+                }
+            }),
+    );
 
     return edits;
 }
