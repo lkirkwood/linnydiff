@@ -6,12 +6,12 @@ It's an implementation of E. Myers 1986 O(ND) time and O(N + D) space shortest-e
 * Instructions
 ** Manual
 + [[https://www.rust-lang.org/tools/install][Install Rust]].
-+ `cargo build`
-+ The binary is in `target/debug/`, named `linnydiff` or `linnydiff.exe`
-+ `cargo test` runs the tests. These are listed in `src/diff/tests.rs`. Some test files are in `test/`.
++ ~cargo build~
++ The binary is in ~target/debug/~, named ~linnydiff~ or ~linnydiff.exe~
++ ~cargo test~ runs the tests. These are listed in ~src/diff/tests.rs~. Some test files are in ~test/~.
 
 ** Docker
 + Install docker
-+ `docker build -t <name> .`
-+ `docker run -it <name>`
-+ The project is in `/opt`, Rust is installed, follow manual instructions.
++ ~docker build -t <name> .~
++ ~docker run -it <name>~
++ The project is in ~/opt~, Rust is installed, follow manual instructions.
